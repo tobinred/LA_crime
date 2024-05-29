@@ -45,7 +45,7 @@ crime_overtime_crimegroup = data %>%
   ylab("Monthly crimes recorded")+
   #changing frequency of labels to monthly and labels just being month and year
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))
-
+crime_overtime_crimegroup
 #line graph, x= time (month increments), y = number of crimes recorded (in that month), color = felony
 crime_overtime_felony = data %>% 
   #creating new variable which is only year and month, creating table to create graph
@@ -69,6 +69,7 @@ crime_overtime_felony = data %>%
   #changing frequency of labels to monthly and labels just being month and year
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))
 
+crime_overtime_felony
 #line graph, x= time (month increments), y = number of crimes recorded (in that month), color = felony
 #In shiny needs to have options to select the patrol division, too many and can't merge
 crime_overtime_patrol = data %>% 
@@ -92,12 +93,53 @@ crime_overtime_patrol = data %>%
   #changing frequency of labels to monthly and labels just being month and year
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))
 
-data %>% 
+#getting number of offences, in preperation for calculating percentages
+n_burglary = sum(data$crime_group == "Burglary and theft")
+n_violent = sum(data$crime_group == "Violent offences")
+n_other = sum(data$crime_group == "Other")
+n_tresspass = sum(data$crime_group == "Criminal damage, trespassing, and related offences")
+n_fraud = sum(data$crime_group == "Fraud and forgery offences")
+n_sex = sum(data$crime_group == "Sex offences")
+n_threat = sum(data$crime_group == "Extortion and threatening offences")
+
+#faceted bar graph (by crime), showing percentage of crimes reported within time period 
+date_diff_by_crime = data %>% 
+  #calculating time difference 
   mutate(date_diff = date_reported - date_occured) %>% 
-  group_by(crime_group,date_diff) %>% 
+  #grouping time difference 
+  mutate(date_diff_group = case_when(date_diff == 0 ~ "Same day",
+                                     date_diff>=1 & date_diff <=3 ~ "1 - 3 days",
+                                     date_diff>=4 & date_diff <=7 ~ "4 - 7 days",
+                                     date_diff>=8 & date_diff <=14 ~ "8 - 14 days",
+                                     date_diff>=15 & date_diff <=29 ~ "15 - 29 days",
+                                     date_diff>=30 & date_diff <=89 ~ "30 - 89 days",
+                                     date_diff>=90 & date_diff <=179 ~ "90 - 179 days",
+                                     date_diff>=180 ~ "More than 180 days")) %>%
+  #adding column with total number of crimes 
+  mutate(denom = case_when(crime_group == "Burglary and theft"~ n_burglary,
+                           crime_group == "Violent offences"~ n_violent,
+                           crime_group == "Other"~ n_other,
+                           crime_group == "Criminal damage, trespassing, and related offences"~ n_tresspass,
+                           crime_group == "Fraud and forgery offences"~ n_fraud,
+                           crime_group == "Sex offences"~ n_sex,
+                           crime_group == "Extortion and threatening offences"~ n_threat)) %>% 
+  #changing to factor so that logical order is presented in graph
+  mutate(date_diff_group = factor(date_diff_group, levels = c("Same day","1 - 3 days","4 - 7 days",
+                                                              "8 - 14 days","15 - 29 days","30 - 89 days",
+                                                              "90 - 179 days","180 - 364 days","More than 180 days"))) %>% 
+  group_by(crime_group,date_diff_group,denom) %>% 
   summarise(count = n()) %>% 
-  ggplot(mapping = aes(x = date_diff, y = count, col = crime_group))+
-  geom_line()+
-  facet_wrap(~crime_group, ncol =3)
-  geom_point()
+  #calculating percentage
+  mutate(percent = 100*(count/denom)) %>% 
+  ggplot(mapping = aes(x = date_diff_group, y = percent, fill = date_diff_group))+
+  geom_col()+
+  facet_wrap(~crime_group, ncol =3)+
+  ylim(0,100)+
+  scale_fill_viridis(discrete=TRUE)+
+  theme_bw()+
+  ylab("Percentage of crimes reported")+
+  xlab("Time taken to report crime")+
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=60,hjust = 1))
+
 
