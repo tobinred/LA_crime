@@ -142,4 +142,44 @@ date_diff_by_crime = data %>%
   theme(legend.position="none",
         axis.text.x=element_text(angle=60,hjust = 1))
 
+date_levels = c("Same day","3 days","7 days",
+                "14 days","30 days","90 days",
+                "180 days","More than 180 days")
+
+#within timeframe graph
+cumulative_reported = data %>% 
+  mutate(date_diff = date_reported - date_occured) %>% 
+  group_by(date_diff,crime_group) %>% 
+  summarise(count = n()) %>% 
+  ungroup() %>% 
+  group_by(crime_group) %>% 
+  mutate(sum = cumsum(count)) %>% 
+  mutate(denom = case_when(crime_group == "Burglary and theft"~ n_burglary,
+                           crime_group == "Violent offences"~ n_violent,
+                           crime_group == "Other"~ n_other,
+                           crime_group == "Criminal damage, trespassing, and related offences"~ n_tresspass,
+                           crime_group == "Fraud and forgery offences"~ n_fraud,
+                           crime_group == "Sex offences"~ n_sex,
+                           crime_group == "Extortion and threatening offences"~ n_threat)) %>% 
+  mutate(percent = 100*(sum/denom)) %>% 
+  ggplot(mapping = aes(x = date_diff, y = percent,col = crime_group))+
+  geom_line()+
+  theme_bw()+
+  ylim(0,100)+
+  scale_color_viridis(discrete=TRUE)+
+  theme(legend.position="bottom")+
+  xlab("Time post offence")+
+  ylab("Cumulative percentage of crimes reported")+
+  labs(col = "Crime group")
+  
+cumulative_reported
+
+cumulative_reported_zoomed = cumulative_reported+
+  ylim(75,100)+
+  xlim(0,1000)
+
+
+
+  
+
 
