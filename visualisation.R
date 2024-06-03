@@ -17,7 +17,8 @@ data = data %>%
          victim_race = as.factor(victim_race),
          weapon_description = as.factor(weapon_description),
          status = as.factor(status),
-         crime_premis = as.factor(crime_premis)
+         crime_premis = as.factor(crime_premis),
+         crime_group = as.factor(crime_group)
   )
 
 #visualisations to do: 
@@ -148,12 +149,16 @@ date_levels = c("Same day","3 days","7 days",
 
 #within timeframe graph
 cumulative_reported = data %>% 
+  #calculating time taken to report crime (in days)
   mutate(date_diff = date_reported - date_occured) %>% 
   group_by(date_diff,crime_group) %>% 
+  #calculating count
   summarise(count = n()) %>% 
   ungroup() %>% 
   group_by(crime_group) %>% 
+  #calculating cumulative count
   mutate(sum = cumsum(count)) %>% 
+  #adding total number of crimes in prep for percentage calculation
   mutate(denom = case_when(crime_group == "Burglary and theft"~ n_burglary,
                            crime_group == "Violent offences"~ n_violent,
                            crime_group == "Other"~ n_other,
@@ -161,6 +166,7 @@ cumulative_reported = data %>%
                            crime_group == "Fraud and forgery offences"~ n_fraud,
                            crime_group == "Sex offences"~ n_sex,
                            crime_group == "Extortion and threatening offences"~ n_threat)) %>% 
+  #calculating cumulative percent 
   mutate(percent = 100*(sum/denom)) %>% 
   ggplot(mapping = aes(x = date_diff, y = percent,col = crime_group))+
   geom_line()+
@@ -171,12 +177,26 @@ cumulative_reported = data %>%
   xlab("Time post offence")+
   ylab("Cumulative percentage of crimes reported")+
   labs(col = "Crime group")
-  
-cumulative_reported
 
+#zoomed in version of graph above, to interesting bit
 cumulative_reported_zoomed = cumulative_reported+
   ylim(75,100)+
   xlim(0,1000)
+
+crime_group_split_felony = data %>% 
+  group_by(crime_group,felony) %>% 
+  summarise(count = n()) %>% 
+  ggplot(mapping = aes(x = crime_group, y = count, fill = felony)) + 
+  geom_col()+
+  scale_fill_viridis(discrete=TRUE,begin = 0.25, end = 0.99,labels = c("Felony", "Less serious crime"))+
+  theme_bw()+
+  #changes color to color-blind friendly scheme 
+  scale_color_viridis(discrete=TRUE)+
+  #moving legend to the bottom, removing legend title, angling x label text and moving down 
+  theme(legend.title=element_blank())+
+  xlab("")+
+  ylab("Number of crimes reported")+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 17))
 
 
 
