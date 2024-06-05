@@ -21,6 +21,8 @@ data = data %>%
          crime_group = as.factor(crime_group)
   )
 
+#setting line width for line graphs
+l_width = 1.5
 #visualisations to do: 
 #bar graph of difference in date occured date reported, split by crime group 
 #bar graph incidence (total), split by crime group (x axis) and felony (color, stacked)
@@ -34,7 +36,7 @@ crime_overtime_crimegroup = data %>%
   #turning date back into date data type so it works with scale_x_date later
   mutate(month_year_occ = as.Date(month_year_occ)) %>% 
   ggplot(mapping = aes(x = month_year_occ, y = count, col = crime_group))+
-  geom_line()+
+  geom_line(linewidth = l_width)+
   geom_point()+
   theme_bw()+
   #changes color to color-blind friendly scheme 
@@ -56,7 +58,7 @@ crime_overtime_felony = data %>%
   #turning date back into date data type so it works with scale_x_date later
   mutate(month_year_occ = as.Date(month_year_occ)) %>% 
   ggplot(mapping = aes(x = month_year_occ, y = count, col = felony))+
-  geom_line()+
+  geom_line(linewidth = l_width)+
   geom_point()+
   theme(legend.position = "bottom")+
   theme_bw()+
@@ -93,7 +95,7 @@ crime_overtime_patrol = data %>%
   ylab("Monthly crimes recorded")+
   #changing frequency of labels to monthly and labels just being month and year
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))
-
+crime_overtime_patrol
 #getting number of offences, in preperation for calculating percentages
 n_burglary = sum(data$crime_group == "Burglary and theft")
 n_violent = sum(data$crime_group == "Violent offences")
@@ -174,14 +176,18 @@ cumulative_reported = data %>%
   ylim(0,100)+
   scale_color_viridis(discrete=TRUE)+
   theme(legend.position="bottom")+
-  xlab("Time post offence")+
+  xlab("Days post offence")+
   ylab("Cumulative percentage of crimes reported")+
   labs(col = "Crime group")
+
+cumulative_reported
 
 #zoomed in version of graph above, to interesting bit
 cumulative_reported_zoomed = cumulative_reported+
   ylim(75,100)+
   xlim(0,1000)
+
+cumulative_reported_zoomed
 
 crime_group_split_felony = data %>% 
   group_by(crime_group,felony) %>% 
@@ -194,11 +200,62 @@ crime_group_split_felony = data %>%
   scale_color_viridis(discrete=TRUE)+
   #moving legend to the bottom, removing legend title, angling x label text and moving down 
   theme(legend.title=element_blank())+
-  xlab("")+
+  xlab("Crime group")+
   ylab("Number of crimes reported")+
   scale_x_discrete(labels = function(x) str_wrap(x, width = 17))
+crime_group_split_felony
+
+#vector of months for axis labels 
+months = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+
+#creating data2, which has specific columns which allow for more indepth time series analysis
+data2 = data %>% 
+  mutate(month_occured = month(date_occured), 
+         year_occured = as.factor(year(date_occured)),
+        wday_occured = wday(date_occured))
 
 
+
+monthly_crime_pattern = data2 %>% 
+  group_by(month_occured,year_occured) %>% 
+  summarise(count = n()) %>% 
+  #2024 removed as not complete data 
+  filter(year_occured != "2024") %>% 
+  ggplot(mapping = aes(x = month_occured, y = count, color = year_occured)) + 
+  geom_line(linewidth = l_width)+
+  scale_x_continuous(name = "Month crime occured",breaks = 1:12, labels = months)+
+  ylab("Number of crimes reported")+
+  labs(col = "Year crime occured")+
+  scale_color_viridis(discrete=TRUE)+
+  theme_bw()
+monthly_crime_pattern
+
+#calculating the average monthly number of crimes reported, by crime group 
+monthly_averages = data2 %>% 
+  group_by(month_occured,year_occured,crime_group) %>% 
+  summarise(count = n()) %>% 
+  ungroup() %>% 
+  group_by(crime_group) %>% 
+  summarise(average = mean(count))
+
+monthly_deviation_crime_group = data2 %>% 
+  group_by(month_occured,year_occured,crime_group) %>% 
+  summarise(count = n()) %>% 
+  #adding monthly averages 
+  left_join(monthly_averages) %>% 
+  #2024 removed as not complete data 
+  filter(year_occured != "2024") %>% 
+  mutate(diff = count - average) %>% 
+  ggplot(mapping = aes(x = month_occured, y = diff, color = year_occured)) + 
+  geom_line(linewidth = 0.55)+
+  #splitting graph by crime group 
+  facet_wrap(~crime_group,nrow = 3)+
+  #changing x axis labels to be more informative 
+  scale_x_continuous(name = "Month crime occured",breaks = 1:12, labels = months)+
+  ylab("Deviation from average monthly crimes reported (of crime group)")+
+  labs(col = "Year crime occured")+
+  scale_color_viridis(discrete=TRUE)+
+  theme_bw()
 
   
 
