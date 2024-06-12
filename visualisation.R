@@ -4,7 +4,8 @@ library("tidyverse")
 library("shiny")
 library(viridis)
 library(zoo)
-
+library(ggExtra)
+library(ggmap)
 data = read_csv("refinedv1.csv")
 
 #returning variables to factors
@@ -212,7 +213,7 @@ months = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","De
 data2 = data %>% 
   mutate(month_occured = month(date_occured), 
          year_occured = as.factor(year(date_occured)),
-        wday_occured = wday(date_occured))
+        wday_occured = wday(date_occured, label = T))
 
 
 
@@ -256,7 +257,33 @@ monthly_deviation_crime_group = data2 %>%
   labs(col = "Year crime occured")+
   scale_color_viridis(discrete=TRUE)+
   theme_bw()
+monthly_deviation_crime_group
 
-  
+times = hm(c("00:00","01:00","02:00","03:00","04:00","05:00","06:00",
+                  "07:00","08:00","09:00","10:00","11:00","12:00",
+                  "13:00","14:00","15:00","16:00","17:00","18:00",
+                  "19:00","20:00","21:00","22:00","23:00"))
 
+day_time_heatmap = data2 %>% 
+  mutate(hour_occured = hour(time_occured)) %>% 
+  group_by(hour_occured,wday_occured) %>% 
+  summarise(count = n()) %>% 
+  ggplot(mapping = aes(x = wday_occured, y = hour_occured, fill = count)) +
+  geom_tile(color= "white",linewidth=0.2)+
+  scale_y_continuous(trans = "reverse", breaks = 0:23,expand = c(0,0))+
+  scale_x_discrete(expand = c(0,0))+
+  scale_fill_viridis(option = "magma", name = "Number of crimes reported", direction = -1)+
+  theme_bw()+
+  theme(legend.position = "bottom",axis.ticks=element_blank())+
+  removeGrid()+
+  labs(x = "Weekday occured",y = "Hour occured")
 
+day_time_heatmap 
+
+la_map = get_stadiamap( bbox = c(left = -118.8, bottom = 33.7, right = -118.0, top = 34.4), zoom = 11, maptype = "alidade_smooth_dark")
+
+#maybe change to raster? idk it's still not great
+ggmap(la_map)+
+  geom_hex(data,mapping = aes(x = lon, y = lat),bins = 350)+
+  scale_fill_viridis(option = "magma", name = "Number of crimes reported", 
+                     direction = -1, begin = 0.1, end = 1)
