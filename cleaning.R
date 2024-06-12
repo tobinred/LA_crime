@@ -114,4 +114,11 @@ refined %>%
   summarise(count = n()) %>% 
   arrange(desc(count))
 
+#if lat or lon is 0, replacing with NA 
+refined = refined %>% 
+  mutate(lat = case_when(lat == 0 ~ NA,
+                         .default = lat),
+         lon = case_when(lon == 0 ~ NA,
+                         .default = lon)) 
+
 write_csv(refined,"refinedv1.csv")
