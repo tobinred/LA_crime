@@ -245,45 +245,54 @@ monthly_deviation_crime_group = data2 %>%
   #adding monthly averages 
   left_join(monthly_averages) %>% 
   #2024 removed as not complete data 
-  filter(year_occured != "2024") %>% 
-  mutate(diff = count - average) %>% 
-  ggplot(mapping = aes(x = month_occured, y = diff, color = year_occured)) + 
+  filter(year_occured != "2024") %>%
+  #inc is percentage increase compared to crime average
+  mutate(inc = (((count-average)/average)*100)) %>% 
+  ggplot(mapping = aes(x = month_occured, y = inc, color = year_occured)) + 
   geom_line(linewidth = 0.55)+
+  geom_hline(yintercept=0, color = 'red')+
   #splitting graph by crime group 
   facet_wrap(~crime_group,nrow = 3)+
   #changing x axis labels to be more informative 
   scale_x_continuous(name = "Month crime occured",breaks = 1:12, labels = months)+
-  ylab("Deviation from average monthly crimes reported (of crime group)")+
+  scale_y_continuous(n.breaks = 16)+
+  ylab("Percentage change of reported crime compared to monthly averages")+
   labs(col = "Year crime occured")+
   scale_color_viridis(discrete=TRUE)+
   theme_bw()
 monthly_deviation_crime_group
 
-times = hm(c("00:00","01:00","02:00","03:00","04:00","05:00","06:00",
-                  "07:00","08:00","09:00","10:00","11:00","12:00",
-                  "13:00","14:00","15:00","16:00","17:00","18:00",
-                  "19:00","20:00","21:00","22:00","23:00"))
+
 
 day_time_heatmap = data2 %>% 
+  #creating table with hour occurred and weekday occurred
   mutate(hour_occured = hour(time_occured)) %>% 
   group_by(hour_occured,wday_occured) %>% 
   summarise(count = n()) %>% 
   ggplot(mapping = aes(x = wday_occured, y = hour_occured, fill = count)) +
   geom_tile(color= "white",linewidth=0.2)+
+  #reversing scale, correct number of breaks
   scale_y_continuous(trans = "reverse", breaks = 0:23,expand = c(0,0))+
+  #removing padding 
   scale_x_discrete(expand = c(0,0))+
   scale_fill_viridis(option = "magma", name = "Number of crimes reported", direction = -1)+
   theme_bw()+
   theme(legend.position = "bottom",axis.ticks=element_blank())+
+  #removing background grid for a neater look
   removeGrid()+
   labs(x = "Weekday occured",y = "Hour occured")
 
 day_time_heatmap 
 
+#getting map of LA from stadia. bbox is map boundaries, zoom is level of detail, maptype is coloring etc
 la_map = get_stadiamap( bbox = c(left = -118.8, bottom = 33.7, right = -118.0, top = 34.4), zoom = 11, maptype = "alidade_smooth_dark")
 
-#maybe change to raster? idk it's still not great
+#number of crimes reported by crime type, mapped onto LA map
 ggmap(la_map)+
-  geom_hex(data,mapping = aes(x = lon, y = lat),bins = 350)+
+  geom_hex(data,mapping = aes(x = lon, y = lat),bins = 200)+
   scale_fill_viridis(option = "magma", name = "Number of crimes reported", 
-                     direction = -1, begin = 0.1, end = 1)
+                     direction = -1, begin = 0.1, end = 1)+
+  xlab("Longitude")+
+  ylab("Latitude")+
+  facet_wrap(~crime_group,nrow= 3)
+
