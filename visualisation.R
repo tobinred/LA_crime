@@ -8,6 +8,8 @@ library(ggExtra)
 library(ggmap)
 data = read_csv("refinedv1.csv")
 
+group_count = data %>% group_by(crime_group) %>% summarise(count = n()) %>% arrange(desc(count))
+crime_levels = c(group_count$crime_group)
 #returning variables to factors
 data = data %>% 
   mutate(patrol_division = as.factor(patrol_division), 
@@ -19,14 +21,11 @@ data = data %>%
          weapon_description = as.factor(weapon_description),
          status = as.factor(status),
          crime_premis = as.factor(crime_premis),
-         crime_group = as.factor(crime_group)
+         crime_group = factor(crime_group, levels = crime_levels)
   )
 
-#setting line width for line graphs
+#setting line width for some line graphs
 l_width = 1.5
-#visualisations to do: 
-#bar graph of difference in date occured date reported, split by crime group 
-#bar graph incidence (total), split by crime group (x axis) and felony (color, stacked)
 
 #line graph, x= time (month increments), y = number of crimes recorded (in that month), color = crime group
 crime_overtime_crimegroup = data %>% 
@@ -296,3 +295,14 @@ ggmap(la_map)+
   ylab("Latitude")+
   facet_wrap(~crime_group,nrow= 3)
 
+#crime between years 
+years_stacked = data2 %>% 
+  group_by(year_occured,crime_group) %>% 
+  summarise(count = n()) %>% 
+  ggplot(mapping = aes(x = year_occured, y = count, fill = crime_group)) +
+  geom_col()+
+  scale_fill_viridis(discrete = T, name = "Crime group")+
+  xlab("Year occured")+
+  ylab("Count")+
+  theme_bw()
+  
