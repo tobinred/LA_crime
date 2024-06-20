@@ -40,12 +40,12 @@ crime_overtime_crimegroup = data %>%
   geom_point()+
   theme_bw()+
   #changes color to color-blind friendly scheme 
-  scale_color_viridis(discrete=TRUE)+
+  scale_color_viridis(discrete=TRUE, name = "Crime type")+
   #moving legend to the bottom, removing legend title, angling x label text and moving down 
-  theme(legend.position="bottom",legend.title=element_blank(),
+  theme(legend.position="bottom",
         axis.text.x=element_text(angle=60,hjust = 1))+
-  xlab("")+
-  ylab("Monthly crimes recorded")+
+  xlab("Month crimes occured")+
+  ylab("Number of crimes recorded")+
   #changing frequency of labels to monthly and labels just being month and year
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))
 crime_overtime_crimegroup
@@ -63,12 +63,12 @@ crime_overtime_felony = data %>%
   theme(legend.position = "bottom")+
   theme_bw()+
   #changes color to color-blind friendly scheme, sets colors on scale to use, sets legend labels
-  scale_color_viridis(discrete=TRUE,begin = 0.3, end = 0.95,labels = c("Felony", "Less serious crime"))+
+  scale_color_viridis(discrete=TRUE,begin = 0.3, end = 0.95,labels = c("Felony", "Less serious crime"), name = "Crime classification")+
   #moving legend to the bottom, removing legend title, angling x label text and moving down 
-  theme(legend.position="bottom",legend.title=element_blank(),
+  theme(legend.position="bottom",
         axis.text.x=element_text(angle=60,hjust = 1))+
-  xlab("")+
-  ylab("Monthly crimes recorded")+
+  xlab("Month crimes occured")+
+  ylab("Number of crimes recorded")+
   #changing frequency of labels to monthly and labels just being month and year
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))
 
@@ -148,6 +148,7 @@ date_diff_by_crime = data %>%
 date_levels = c("Same day","3 days","7 days",
                 "14 days","30 days","90 days",
                 "180 days","More than 180 days")
+
 
 #within timeframe graph
 cumulative_reported = data %>% 
@@ -255,7 +256,7 @@ monthly_deviation_crime_group = data2 %>%
   #changing x axis labels to be more informative 
   scale_x_continuous(name = "Month crime occured",breaks = 1:12, labels = months)+
   scale_y_continuous(n.breaks = 16)+
-  ylab("Percentage change of reported crime compared to monthly averages")+
+  ylab("Percentage change")+
   labs(col = "Year crime occured")+
   scale_color_viridis(discrete=TRUE)+
   theme_bw()
@@ -293,7 +294,15 @@ ggmap(la_map)+
                      direction = -1, begin = 0.1, end = 1)+
   xlab("Longitude")+
   ylab("Latitude")+
-  facet_wrap(~crime_group,nrow= 3)
+  facet_wrap(~crime_group,nrow= 2)
+
+ggmap(la_map)+
+  geom_hex(data,mapping = aes(x = lon, y = lat),bins = 300)+
+  scale_fill_viridis(option = "magma", name = "Number of crimes reported", 
+                     direction = -1, begin = 0.1, end = 1)+
+  xlab("Longitude")+
+  ylab("Latitude")
+
 
 #crime between years 
 years_stacked = data2 %>% 
