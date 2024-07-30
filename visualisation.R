@@ -6,6 +6,7 @@ library(viridis)
 library(zoo)
 library(ggExtra)
 library(ggmap)
+library(ggridges)
 data = read_csv("refinedv1.csv")
 
 group_count = data %>% group_by(crime_group) %>% summarise(count = n()) %>% arrange(desc(count))
@@ -49,6 +50,33 @@ crime_overtime_crimegroup = data %>%
   #changing frequency of labels to monthly and labels just being month and year
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))
 crime_overtime_crimegroup
+
+#line graph, x= time (month increments), y = number of crimes recorded (in that month)
+crime_overtime = data %>% 
+  #creating new variable which is only year and month, creating table to create graph
+  mutate(month_year_occ = as.yearmon(date_occured)) %>% 
+  group_by(month_year_occ) %>% 
+  summarise(count = n()) %>% 
+  #turning date back into date data type so it works with scale_x_date later
+  mutate(month_year_occ = as.Date(month_year_occ)) %>% 
+  ggplot(mapping = aes(x = month_year_occ, y = count))+
+  #adding shaded areas to show when stay at home orders were in place
+  annotate("rect",xmin = as_date("2020-03-01"),xmax = as_date("2020-05-01"),ymin = -Inf,ymax = Inf,alpha = 0.2,fill = "red")+
+  annotate("rect",xmin = as_date("2020-12-01"),xmax = as_date("2021-02-01"),ymin = -Inf,ymax = Inf,alpha = 0.2,fill = "red")+
+  #line to show when most restrictions were lifted
+  geom_vline(xintercept = as_date("2021-06-01"),color = "red",alpha = 0.9)+
+  geom_line(linewidth = l_width)+
+  geom_point()+
+  theme_bw()+
+  #angling x label text and moving down 
+  theme(axis.text.x=element_text(angle=60,hjust = 1))+
+  xlab("Month crimes occured")+
+  ylab("Number of crimes recorded")+
+  #changing frequency of labels to monthly and labels just being month and year
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))+
+  ylim(1000,21000)
+crime_overtime
+
 #line graph, x= time (month increments), y = number of crimes recorded (in that month), color = felony
 crime_overtime_felony = data %>% 
   #creating new variable which is only year and month, creating table to create graph
@@ -284,25 +312,29 @@ day_time_heatmap = data2 %>%
 
 day_time_heatmap 
 
-#getting map of LA from stadia. bbox is map boundaries, zoom is level of detail, maptype is coloring etc
-la_map = get_stadiamap( bbox = c(left = -118.8, bottom = 33.7, right = -118.0, top = 34.4), zoom = 11, maptype = "alidade_smooth_dark")
-
-#number of crimes reported by crime type, mapped onto LA map
-ggmap(la_map)+
-  geom_hex(data,mapping = aes(x = lon, y = lat),bins = 200)+
-  scale_fill_viridis(option = "magma", name = "Number of crimes reported", 
-                     direction = -1, begin = 0.1, end = 1)+
-  xlab("Longitude")+
-  ylab("Latitude")+
-  facet_wrap(~crime_group,nrow= 2)
-
-ggmap(la_map)+
-  geom_hex(data,mapping = aes(x = lon, y = lat),bins = 300)+
-  scale_fill_viridis(option = "magma", name = "Number of crimes reported", 
-                     direction = -1, begin = 0.1, end = 1)+
-  xlab("Longitude")+
-  ylab("Latitude")
-
+#in progress: geographical analysis 
+# #getting map of LA from stadia. bbox is map boundaries, zoom is level of detail, maptype is coloring etc
+# la_map = get_stadiamap( bbox = c(left = -118.8, bottom = 33.7, right = -118.0, top = 34.4), zoom = 11, maptype = "alidade_smooth_dark")
+# 
+# #number of crimes reported by crime type, mapped onto LA map
+# ggmap(la_map)+
+#   geom_hex(data,mapping = aes(x = lon, y = lat),bins = 200)+
+#   scale_fill_viridis(option = "magma", name = "Number of crimes reported", 
+#                      direction = -1, begin = 0.1, end = 1)+
+#   xlab("Longitude")+
+#   ylab("Latitude")+
+#   facet_wrap(~crime_group,nrow= 2)
+# 
+# base_map = ggmap(la_map)+
+#   geom_hex(data,mapping = aes(x = lon, y = lat),bins = 300)+
+#   scale_fill_viridis(option = "magma", name = "Number of crimes reported", 
+#                      direction = -1, begin = 0.1, end = 1)+
+#   xlab("Longitude")+
+#   ylab("Latitude")
+# 
+# la_map_zoomed = get_stadiamap( bbox = c(left = -118.4, bottom = 34.2, right = -118.2, top = 34.0), zoom = 11, maptype = "alidade_smooth_dark")
+# 
+# ggmap(la_map_zoomed)
 
 #crime between years 
 years_stacked = data2 %>% 
@@ -314,4 +346,17 @@ years_stacked = data2 %>%
   xlab("Year occured")+
   ylab("Count")+
   theme_bw()
+
+time_diff_ridgeplot = data %>% 
+  mutate(date_diff = date_reported - date_occured) %>% 
+  ggplot(mapping = aes(y = crime_group, x = date_diff, fill = crime_group))+
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")+
+  scale_fill_viridis(discrete = T)+
+  xlim(0,30)
+time_diff_ridgeplot
+  
+
+  
   
