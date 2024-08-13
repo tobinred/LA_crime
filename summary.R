@@ -29,3 +29,19 @@ data2 %>%
   summarise(count = n()) %>% 
   arrange(year_occured,desc(count)) %>% 
   print(n = 35)
+
+data2 %>% 
+  filter(year_occured == "2024") %>% 
+  arrange(desc(date_reported))
+#average and median reporting time 
+data %>% 
+  mutate(date_diff = date_reported - date_occured) %>% 
+  group_by(crime_group) %>% 
+  summarise(avg = mean(date_diff), median = median(date_diff))
+
+#longest reporting times 
+data %>% 
+  mutate(date_diff = date_reported - date_occured) %>% 
+  arrange(desc(date_diff)) %>% 
+  select(-c(DR_NO, patrol_division,sub_area,crime_premis,weapon_description,status,lat,lon))
+  
