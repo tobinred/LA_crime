@@ -7,6 +7,7 @@ library(zoo)
 library(ggExtra)
 library(ggmap)
 library(ggridges)
+library(scales)
 data = read_csv("refinedv1.csv")
 
 group_count = data %>% group_by(crime_group) %>% summarise(count = n()) %>% arrange(desc(count))
@@ -50,6 +51,7 @@ crime_overtime_crimegroup = data %>%
   #changing frequency of labels to monthly and labels just being month and year
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))
 crime_overtime_crimegroup
+ggsave("crime_overtimegrp_highres.png",dpi = "retina", width = 30, height = 15, units = "cm")
 
 #line graph, x= time (month increments), y = number of crimes recorded (in that month)
 crime_overtime = data %>% 
@@ -76,6 +78,7 @@ crime_overtime = data %>%
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y", expand = c(0.01,0.1))+
   ylim(1000,21000)
 crime_overtime
+ggsave("crime_overtime_highres.png",dpi = "retina", width = 30, height = 15, units = "cm")
 
 #line graph, x= time (month increments), y = number of crimes recorded (in that month), color = felony
 crime_overtime_felony = data %>% 
@@ -289,7 +292,7 @@ monthly_deviation_crime_group = data2 %>%
   scale_color_viridis(discrete=TRUE)+
   theme_bw()
 monthly_deviation_crime_group
-
+ggsave("deviation_highres.png",width = 28, height = 28, units = "cm",dpi = "retina")
 
 
 day_time_heatmap = data2 %>% 
@@ -311,6 +314,21 @@ day_time_heatmap = data2 %>%
   labs(x = "Weekday occured",y = "Hour occured")
 
 day_time_heatmap 
+ggsave("heatmap_highres.png",width = 20, height = 20, units = "cm",dpi = "retina")
+
+#WIP another date graph
+# data2 %>% 
+#   group_by(time_occured,wday_occured) %>% 
+#   summarise(count = n()) %>% 
+#   ungroup() %>% 
+#   group_by(time_occured) %>% 
+#   summarise(average = mean(count)) %>% 
+#   ggplot(mapping = aes(x = time_occured, y = average)) + 
+#   geom_line()+
+#   theme_bw()+
+#   labs(x = "Time occured", y = "Average number of crimes reported")+
+#   scale_x_continuous(breaks = breaks_width("1 hours"))
+
 
 #in progress: geographical analysis 
 # #getting map of LA from stadia. bbox is map boundaries, zoom is level of detail, maptype is coloring etc
@@ -346,6 +364,9 @@ years_stacked = data2 %>%
   xlab("Year occured")+
   ylab("Count")+
   theme_bw()
+ggsave("yearsstacked_highres.png",width = 25, height = 20, units = "cm",dpi = "retina")
+
+
 
 time_diff_ridgeplot = data %>% 
   mutate(date_diff = date_reported - date_occured) %>% 
